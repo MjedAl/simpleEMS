@@ -1,0 +1,55 @@
+{% block body %}
+<style>
+    i,
+    .fa {
+        color: rgb(23, 162, 184);
+    }
+</style>
+<nav class="navbar navbar-dark navbar-expand-md bg-info">
+    <div class="container-fluid"><a class="navbar-brand" href="/">EMS</a><button data-toggle="collapse"
+            class="navbar-toggler" data-target="#navcol-1"><span class="sr-only">Toggle navigation</span><span
+                class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse d-xl-flex justify-content-end justify-content-lg-end justify-content-xl-end"
+            id="navcol-1">
+            <ul class="nav navbar-nav">
+                <!-- if not logged -->
+                <li class="nav-item"><a class="nav-link" href="/events"><button class="btn btn-dark"
+                            type="button">Events</button></a></li>
+                {% if currentUser.is_authenticated() %}
+                <li class="nav-item dropdown no-arrow">
+                    <div class="nav-item dropdown no-arrow"><a class="dropdown-toggle nav-link" data-toggle="dropdown"
+                            aria-expanded="false" href="#"><span class="d-inline mr-2 text-gray-600 small"
+                                style="font-size: 20px;">{{currentUser.name}}</span>
+                            {% if currentUser.picture%}
+                            <img class="border rounded-circle img-profile" style="max-width: 45px;max-height: 45px;"
+                                src="{{currentUser.picture}}">
+                            {% else %}
+                            <!-- TODO add standard image -->
+                            <!-- <img class="border rounded-circle img-profile" src=""> -->
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu shadow dropdown-menu-right animated--grow-in">
+                            <a class="dropdown-item" href="/profile">
+                                <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400">
+                                </i>&nbsp;Profile</a>
+                            {% if 'admin' in current_user.roles %}
+                            <a class="dropdown-item" href="/admin">
+                                <i class="fas fa-minus-circle fa-sm fa-fw mr-2 text-gray-400"></i>Admin</a>
+
+                            {% endif %}
+                            <div class="dropdown-divider"></div><a class="dropdown-item" href="/logout"><i
+                                    class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>&nbsp;Logout</a>
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="nav-item"><a class="nav-link" href="/login"><button class="btn btn-dark"
+                            type="button">Login</button></a></li>
+                <li class="nav-item"><a class="nav-link" href="/register"><button class="btn btn-dark"
+                            type="button">Register</button></a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}

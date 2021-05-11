@@ -1,0 +1,5 @@
+secret.py
+/static/uploads
+migrations
+__pycache__
+/templates/profile.html

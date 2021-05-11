@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>Browse events</title>
+    <link rel="stylesheet" href="../static/assets/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../static/assets/fonts/fontawesome-all.min.css" />
+    <style>
+        .timeBlock {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            color: rgb(255, 255, 255);
+            background-color: rgb(23, 162, 184);
+            padding: 5px;
+            text-transform: uppercase;
+            align-items: center;
+            align-content: center;
+            flex-direction: column;
+            text-align: center;
+            float: left;
+        }
+
+        .timeBlock>.day {
+            display: table-cell;
+            vertical-align: middle;
+            font-size: 56pt;
+            font-weight: 100;
+            line-height: 1;
+        }
+
+        .timeBlock>.month {
+            display: table-cell;
+            vertical-align: middle;
+            font-size: 24pt;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .timeBlock>.time {
+            display: table-cell;
+            vertical-align: middle;
+            font-size: 18pt;
+            font-weight: 450;
+            line-height: 1;
+        }
+
+        .col-12>.card {
+            < !-- height: 100%;
+            -->transition: transform .2s;
+        }
+
+        .col-12>.card:hover {
+            transform: scale(1.09);
+            z-index: 1;
+            box-shadow: 0rem 0rem 1rem 1rem rgba(0, 0, 0, 0.175) !important;
+        }
+
+        .bigCard {
+            margin-top: 4%;
+            margin-bottom: 1%;
+            margin-right: 3%;
+            margin-left: 3%
+        }
+
+        .mb-1rem {
+            margin-bottom: 1rem;
+        }
+
+        .fa-lock {
+            color: red !important;
+        }
+
+        img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="
+        min-height: 100vh;
+        max-height: 100%;
+        background: linear-gradient(rgb(23, 162, 184) 0%, rgb(40, 45, 50) 100%);
+      ">
+        {% include "blueprints/navbar.html" %} {% with messages =
+        get_flashed_messages(with_categories=true) %} {% if messages %} {% for
+        category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show"
+            style="margin-top: 1%; margin-right: 10%; margin-left: 10%" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+        <script>
+            window.setTimeout(function () {
+                $('.alert')
+                    .fadeTo(500, 0)
+                    .slideUp(500, function () {
+                        $(this).remove();
+                    });
+            }, 1500);
+        </script>
+        {% endif %} {% endwith %}
+        {% if currentUser.is_authenticated() %}
+        {% if currentUser.events %}
+        <div class="card bg-dark border-white bigCard">
+            <div class="card-body">
+                <h4 class="text-center text-white card-title">Subscribed events</h4>
+                <div class="row d-inline-flex h-100 w-100 m-1">
+                    {% for users_events in currentUser.events %}
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-4 col-xl-3 p-1">
+                        <div class="card">
+                            <div class="card-body">
+                                <a href="/event/{{users_events.event.id}}">
+                                    <h4 class="card-title text-center">{{users_events.event.name}}</h4>
+                                </a>
+                                <div class="row mb-1rem">
+                                    {% if users_events.event.picture %}
+                                    <div class="col-6 p-0">
+                                        <div class='h-100 w-100'>
+                                            <time class="timeBlock">
+                                                <span
+                                                    class="day">{{users_events.event.timeDetails()["time-day"]}}</span>
+                                                <span
+                                                    class="month">{{users_events.event.timeDetails()["time-month"]}}</span>
+                                                <span
+                                                    class="time">{{users_events.event.timeDetails()["time-time"]}}</span>
+                                            </time>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 p-0"> {% if 'http' in users_events.event.picture %}
+                                        <img src="{{users_events.event.picture}}" />
+                                        {% else %}
+                                        <img src="/static/uploads/{{users_events.event.picture}}" />
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="col-12 p-0">
+                                        <div class='h-100 w-100'>
+                                            <time class="timeBlock">
+                                                <span
+                                                    class="day">{{users_events.event.timeDetails()["time-day"]}}</span>
+                                                <span
+                                                    class="month">{{users_events.event.timeDetails()["time-month"]}}</span>
+                                                <span
+                                                    class="time">{{users_events.event.timeDetails()["time-time"]}}</span>
+                                            </time>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% if users_events.event.private %}
+                                <div class="row p-0 m-0 h-100 w-100 text-center">
+                                    <div class='col'>
+                                        <span><i class="fa fa-lock"></i> Private
+                                            event</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class='row p-0 m-0 h-100 w-100 text-center'>
+
+                                    {% if users_events.event.description != "" %}
+                                    <div class="col-12 col-xl-6">
+                                        <span><i class="fa fa-info"></i>
+                                            {{users_events.event.description}}</span><br />
+                                    </div>
+                                    {% endif %}
+                                    <div class="col-12 col-xl-6">
+                                        <span><i class="fa fa-users"></i> Total
+                                            Users: {{users_events.event.currentRegistered}}</span><br />
+                                    </div>
+                                </div>
+                            </div><a class="eventButton" href="/event/{{users_events.event.id}}/unsubscribe">
+                                <button class="btn btn-secondary w-100 mt-1" type="button">
+                                    Unsubscribe
+                                </button></a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if currentUser.is_authenticated() %}
+        {% if currentUser.createdEvents %}
+        <div class="card bg-dark border-white bigCard">
+            <div class="card-body">
+                <h4 class="text-center text-white card-title">My created events</h4>
+                <div class="row d-inline-flex h-100 w-100 m-1">
+                    {% for event in currentUser.createdEvents %}
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-4 col-xl-3 p-1">
+                        <div class="card">
+                            <div class="card-body">
+                                <a href="/event/{{event.id}}">
+                                    <h4 class="card-title text-center">{{event.name}}</h4>
+                                </a>
+                                <div class="row mb-1rem">
+                                    {% if event.picture %}
+                                    <div class="col-6 p-0">
+                                        <div class='h-100 w-100'>
+                                            <time class="timeBlock">
+                                                <span class="day">{{event.timeDetails()["time-day"]}}</span>
+                                                <span class="month">{{event.timeDetails()["time-month"]}}</span>
+                                                <span class="time">{{event.timeDetails()["time-time"]}}</span>
+                                            </time>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 p-0"> {% if 'http' in event.picture %}
+                                        <img src="{{event.picture}}" />
+                                        {% else %}
+                                        <img src="/static/uploads/{{event.picture}}" />
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="col-12 p-0">
+                                        <div class='h-100 w-100'>
+                                            <time class="timeBlock">
+                                                <span class="day">{{event.timeDetails()["time-day"]}}</span>
+                                                <span class="month">{{event.timeDetails()["time-month"]}}</span>
+                                                <span class="time">{{event.timeDetails()["time-time"]}}</span>
+                                            </time>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if event.private %}
+                                    <div class="row p-0 m-0 h-100 w-100 text-center">
+                                        <div class='col'>
+                                            <span><i class="fa fa-lock text-red"></i>Private
+                                                event</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <div class='row p-0 m-0 h-100 w-100 text-center'>
+                                        {% if event.description != "" %}
+                                        <div class="col-12 col-xl-6">
+                                            <span><i class="fa fa-info"></i>
+                                                {{event.description}}</span><br />
+                                        </div>
+                                        {% endif %}
+                                        <div class="col-12 col-xl-6">
+                                            <span><i class="fa fa-users"></i> Total
+                                                Users: {{event.currentRegistered}}</span><br />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if event.id in userSubbedEventsIDs %}
+                            <a class="eventButton" href="/event/{{event.id}}/unsubscribe">
+                                <button class="btn btn-secondary w-100 mt-1" type="button">
+                                    Unsubscribe
+                                </button></a>
+                            {% else %}
+                            <a class="eventButton" href="/event/{{event.id}}/subscribe">
+                                <button class="btn btn-success w-100 mt-1" type="button">
+                                    Subscribe
+                                </button></a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        <!--  -->
+        <div style="padding-bottom: 10%;">
+            <div class="card bg-dark border-white bigCard">
+                <div class="card-body">
+                    <h4 class="text-center text-white card-title">Upcoming public events</h4>
+                    <div class="row d-inline-flex h-100 w-100 m-1">
+                        {% for event in events %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-4 col-xl-3 p-1">
+                            <div class="card">
+                                <div class="card-body">
+                                    <a href="/event/{{event.id}}">
+                                        <h4 class="card-title text-center">{{event.name}}</h4>
+                                    </a>
+                                    <div class="row mb-1rem">
+                                        {% if event.picture %}
+                                        <div class="col-6 p-0">
+                                            <div class='h-100 w-100'>
+                                                <time class="timeBlock">
+                                                    <span class="day">{{event.timeDetails()["time-day"]}}</span>
+                                                    <span class="month">{{event.timeDetails()["time-month"]}}</span>
+                                                    <span class="time">{{event.timeDetails()["time-time"]}}</span>
+                                                </time>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 p-0"> {% if 'http' in event.picture %}
+                                            <img src="{{event.picture}}" />
+                                            {% else %}
+                                            <img src="/static/uploads/{{event.picture}}" />
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <div class="col-12 p-0">
+                                            <div class='h-100 w-100'>
+                                                <time class="timeBlock">
+                                                    <span class="day">{{event.timeDetails()["time-day"]}}</span>
+                                                    <span class="month">{{event.timeDetails()["time-month"]}}</span>
+                                                    <span class="time">{{event.timeDetails()["time-time"]}}</span>
+                                                </time>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <div class='row p-0 m-0 h-100 w-100 text-center'>
+                                            {% if event.description != "" %}
+                                            <div class="col-12 col-xl-6">
+                                                <span><i class="fa fa-info"></i>
+                                                    {{event.description}}</span><br />
+                                            </div>
+                                            {% endif %}
+                                            <div class="col-12 col-xl-6">
+                                                <span><i class="fa fa-users"></i> Total
+                                                    Users: {{event.currentRegistered}}</span><br />
+                                            </div>
+                                        </div>
+                                        <div class='row p-0 m-0 h-100 w-100 text-center'>
+                                            <div class="col-12">
+                                                <span><i
+                                                        class="fa fa-user"></i> Owner: {{event.owner.name}}</span><br />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if event.id in userSubbedEventsIDs %}
+                                <a class="eventButton" href="/event/{{event.id}}/unsubscribe">
+                                    <button class="btn btn-secondary w-100" type="button">
+                                        Unsubscribe
+                                    </button></a>
+                                {% else %}
+                                <a class="eventButton" href="/event/{{event.id}}/subscribe">
+                                    <button class="btn btn-success w-100" type="button">
+                                        Subscribe
+                                    </button></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include "blueprints/footer.html" %}
+    <script src="../static/assets/js/jquery.min.js"></script>
+    <script src="../static/assets/bootstrap/js/bootstrap.min.js"></script>
+</body>
+
+</html>

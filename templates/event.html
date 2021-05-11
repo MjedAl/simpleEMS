@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>EMS - {{event.name}}</title>
+    <link rel="stylesheet" href="../static/assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/assets/fonts/fontawesome-all.min.css">
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.datatables.net/v/bs4/jq-3.3.1/jszip-2.5.0/dt-1.10.24/b-1.7.0/b-html5-1.7.0/sl-1.3.3/datatables.min.css" />
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.datatables.net/v/bs4/jq-3.3.1/jszip-2.5.0/dt-1.10.24/b-1.7.0/b-html5-1.7.0/sl-1.3.3/datatables.min.js"></script>
+</head>
+
+<body>
+    <div
+        style="min-height: 100vh;max-height: 100%;background: linear-gradient(rgb(23,162,184) 0%, rgb(40,45,50) 100%);">
+        {% include 'blueprints/navbar.html' %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show"
+            style="margin-top: 1%;margin-right: 10%;margin-left: 10%;" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+        <script>
+            window.setTimeout(function () {
+                $(".alert").fadeTo(500, 0).slideUp(500, function () {
+                    $(this).remove();
+                });
+            }, 1500);
+        </script>
+        {% endif %}
+        {% endwith %}
+        <div style="margin-top: 2%;">
+            <div class="card bg-dark border-white" style="height:75vh;margin-top: 3%;margin-right: 3%;margin-left: 3%;">
+                {% if event.picture %}
+                {% if 'http' in event.picture %}
+                <div class="card-body" style="background: url('{{event.picture}}') center / cover no-repeat;">
+                    {% else %}
+                    <div class="card-body"
+                        style="background: url('/static/uploads/{{event.picture}}') center / cover no-repeat;">
+                        {% endif %}
+                        {% else %}
+                        <div class="card-body">
+                            {% endif %}
+                            <div class="d-xl-flex justify-content-xl-center align-items-xl-center h-100 w-100"
+                                style="background:rgba(0,0,0,0.6);">
+                                <div class='text-white text-center'>
+                                    <h1>{{event.name}}</h1>
+                                    <div class="col">
+                                        <div class="row">
+                                            <h2><i class="fa fa-calendar"></i> Time: {{event.time}}<br /></h2>
+                                        </div>
+                                        {% if event.location !='' %}
+                                        <div class="row">
+                                            <h2><i class="fa fa-map-marker"></i> Location: {{event.location}}<br />
+                                            </h2>
+                                        </div>
+                                        {% endif %}
+                                        <div class="row">
+                                            <h2><i class="fa fa-users"></i> Users
+                                                registered: {{event.currentRegistered}}<br /></h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if users_events %}
+                <div class='card border-white'
+                    style="min-height:100px;margin-right: 3%;margin-left: 3%;margin-top: 3%;">
+                    <div class="p-2">
+                        <label class='w-100 text-center'>Subscribed users</label>
+                        <table id="usersTable" class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Subscribed on (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_event in users_events %}
+                                <tr>
+                                    <td>{{user_event.user.id}}</td>
+                                    <td>{{user_event.user.email}}</td>
+                                    <td>{{user_event.addedOn}}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <!-- <button id="removeButton" class='btn btn-danger'>Remove selected</button> -->
+                    </div>
+                </div>
+                <script>
+                    $(document).ready(function () {
+                        $.noConflict();
+                        var table = $('#usersTable').DataTable({
+                            dom: 'Bfrtip',
+                            buttons: [
+                                'copy',
+                                {
+                                    extend: 'excel',
+                                },
+                                {
+                                    extend: 'pdf',
+                                }
+                            ]
+                        });
+                        $('#usersTable tbody').on('click', 'tr', function () {
+                            if ($(this).hasClass('selected')) {
+                                $(this).removeClass('selected');
+                            }
+                            else {
+                                table.$('tr.selected').removeClass('selected');
+                                $(this).addClass('selected');
+                            }
+                        });
+
+                        $('#removeButton').click(function () {
+                            //to do add logic
+                            table.row('.selected').remove().draw(false);
+                        });
+                    });
+                </script>
+                {% endif %}
+            </div>
+
+            {% include 'blueprints/footer.html' %}
+            <script src="../static/assets/js/jquery.min.js"></script>
+            <script src="../static/assets/bootstrap/js/bootstrap.min.js"></script>
+</body>
+
+</html>
