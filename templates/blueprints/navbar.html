@@ -18,7 +18,7 @@
                 {% if currentUser.is_authenticated() %}
                 <li class="nav-item dropdown no-arrow">
                     <div class="nav-item dropdown no-arrow"><a class="dropdown-toggle nav-link" data-toggle="dropdown"
-                            aria-expanded="false" href="#"><span class="d-inline mr-2 text-gray-600 small"
+                            aria-expanded="false" href="#"><span class="d-inline mr-2 text-light small"
                                 style="font-size: 20px;">{{currentUser.name}}</span>
                             {% if currentUser.picture%}
                             <img class="border rounded-circle img-profile" style="max-width: 45px;max-height: 45px;"
@@ -27,17 +27,29 @@
                             <!-- TODO add standard image -->
                             <!-- <img class="border rounded-circle img-profile" src=""> -->
                             {% endif %}
+                            {% if current_user.is_authenticated() %}
+                            {% if not current_user.emailConfirmed %}
+                            <span class="badge badge-danger">Not verified</span>
+                            {% endif %}
+                            {% endif %}
                         </a>
                         <div class="dropdown-menu shadow dropdown-menu-right animated--grow-in">
-                            <a class="dropdown-item" href="/profile">
+
+                            <!-- <a class="dropdown-item" href="/profile">
                                 <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400">
-                                </i>&nbsp;Profile</a>
+                                </i>&nbsp;Profile</a> -->
+                            {% if current_user.is_authenticated() %}
+                            {% if not current_user.emailConfirmed %}
+                            <a class="dropdown-item text-danger" href="/confirm">
+                                <i class="far fa-envelope fa-sm fa-fw mr-2 text-gray-400 text-danger">
+                                </i>&nbsp;Send verification email</a> {% endif %}
+                            {% endif %}
                             {% if 'admin' in current_user.roles %}
                             <a class="dropdown-item" href="/admin">
                                 <i class="fas fa-minus-circle fa-sm fa-fw mr-2 text-gray-400"></i>Admin</a>
-
                             {% endif %}
-                            <div class="dropdown-divider"></div><a class="dropdown-item" href="/logout"><i
+                            <!-- <div class="dropdown-divider"></div> -->
+                            <a class="dropdown-item" href="/logout"><i
                                     class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>&nbsp;Logout</a>
                         </div>
                     </div>
@@ -52,4 +64,5 @@
         </div>
     </div>
 </nav>
+
 {% endblock %}

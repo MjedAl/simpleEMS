@@ -15,18 +15,25 @@ from flask_login import (
 from flask_migrate import current
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-
+from itsdangerous import URLSafeTimedSerializer
 from oauthlib.oauth2 import WebApplicationClient
 import requests
+from flask_mail import Mail, Message
 # Internal imports
 from db import setup_db, User, Event, UsersEvents
 
 try:
-    from secret import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SECRET_KEY
+    from secret import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SECRET_KEY, FLASK_JWT_SECRET_KEY, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
 except ModuleNotFoundError:
     GOOGLE_CLIENT_ID = None
     GOOGLE_CLIENT_SECRET = None
     FLASK_SECRET_KEY = None
+    FLASK_JWT_SECRET_KEY = None
+    MAIL_SERVER = None
+    MAIL_PORT = None
+    MAIL_USERNAME = None
+    MAIL_PASSWORD = None
+
 
 # Configuration
 GOOGLE_CLIENT_ID = os.environ.get(
@@ -44,6 +51,15 @@ app.secret_key = (os.environ.get("SECRET_KEY")
 login_manager = LoginManager()
 login_manager.init_app(app)
 setup_db(app)
+# Email setup
+app.config['MAIL_SERVER'] = MAIL_SERVER
+app.config['MAIL_PORT'] = MAIL_PORT
+app.config['MAIL_USERNAME'] = MAIL_USERNAME
+app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = False
+app.config['SECURITY_PASSWORD_SALT'] = 'my_precious_two'  # TODO replace
+mail = Mail(app)
 
 # upload setup
 UPLOAD_FOLDER = './static/uploads'
@@ -54,6 +70,24 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+
+def generate_confirmation_token(email):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt=app.config['SECURITY_PASSWORD_SALT'])
+
+
+def confirm_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    try:
+        email = serializer.loads(
+            token,
+            salt=app.config['SECURITY_PASSWORD_SALT'],
+            max_age=expiration
+        )
+    except:
+        return False
+    return email
 
 
 @login_manager.user_loader
@@ -78,6 +112,44 @@ def roles_required(*role_names):
 @app.route("/")
 def index():
     return render_template('index.html', currentUser=current_user)
+
+
+@app.route("/reset", methods=['GET', 'POST'])
+def password_reset():
+    if request.method == 'GET':
+        if current_user.is_authenticated():
+            return redirect(url_for("index"))
+        return render_template('reset.html')
+    else:
+        email = request.form["email"]
+        if email is None:
+            flash('Invalid email!', 'danger')
+            return render_template('reset.html')
+        else:
+            # user with same email exist? :
+            # generate reset token and send email
+            flash('Email will be sent if user with email is found', 'success')
+            return render_template('reset.html')
+
+# Continue later
+
+
+@app.route("/reset/<Token>", methods=['GET', 'POST'])
+def password_reset():
+    if request.method == 'GET':
+        if current_user.is_authenticated():
+            return redirect(url_for("index"))
+        return render_template('reset.html')
+    else:
+        email = request.form["email"]
+        if email is None:
+            flash('Invalid email!', 'danger')
+            return render_template('reset.html')
+        else:
+            # user with same email exist? :
+            # generate reset token and send email
+            flash('Email will be sent if user with email is found', 'success')
+            return render_template('reset.html')
 
 
 def get_google_provider_cfg():
@@ -130,6 +202,14 @@ def register():
                 myUser.generate_my_password_hash(password)
                 myUser.insert()
                 login_user(myUser, remember=True)
+                # Send confirmation email
+                token = generate_confirmation_token(current_user.email)
+                msg = Message(
+                    'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
+                msg.html = render_template(
+                    '/emails/register_confirm.html', register=True, name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
+                mail.send(msg)
+
                 flash('Account created', 'success')
                 return redirect(url_for("index"))
             else:
@@ -138,6 +218,38 @@ def register():
         else:
             flash('Passwords don\'t match!', 'danger')
             return redirect(request.url)
+
+
+@app.route('/confirm', defaults={'token': None})
+@app.route('/confirm/<token>')
+def confirmEmail(token):
+    if current_user.emailConfirmed:
+        flash('Your email is already confirmed', 'success')
+        return redirect(url_for("index"))
+    if token is None:
+        # send the confirmation email
+        token = generate_confirmation_token(current_user.email)
+        msg = Message(
+            'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
+        msg.html = render_template(
+            '/emails/register_confirm.html', name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
+        mail.send(msg)
+        flash('Confirmation email has been sent!', 'success')
+        return redirect(url_for("index"))
+    else:
+        try:
+            email = confirm_token(token)
+        except:
+            flash('The confirmation link is invalid or has expired.', 'danger')
+            return redirect(url_for("index"))
+        if current_user.email == email:
+            current_user.emailConfirmed = True
+            current_user.update()
+            flash('Your email has been confirmed', 'success')
+            return redirect(url_for("index"))
+
+        # confirm the email
+    return render_template('expression')
 
 
 @app.route('/gAuth')
@@ -196,7 +308,7 @@ def callback():
         getUser = User.get(unique_id)
         if getUser is None:
             getUser = User(
-                id=unique_id, name=users_name, email=users_email, picture=picture, signedWithGoogle=True
+                id=unique_id, name=users_name, email=users_email, picture=picture, signedWithGoogle=True, emailConfirmed=True
             )
             getUser.insert()
         login_user(getUser, remember=True)
@@ -294,6 +406,11 @@ def eventSub(id):
             abort(404)
         if event.private and event.owner_id != current_user.id:
             abort(403)
+        msg = Message(
+            'simpleEMS - New subscriber', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
+        msg.body = "New user ("+current_user.email + \
+            ") has subsribred to your event: "+event.name
+        mail.send(msg)
         event.addUser(current_user)
         return redirect(url_for("eventsG"))
 
@@ -309,16 +426,21 @@ def eventUnsub(id):
             abort(404)
         if event.private and event.owner_id != current_user.id:
             abort(403)
+        msg = Message(
+            'simpleEMS - New unsubscribed', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
+        msg.body = "User ("+current_user.email + \
+            ") has unsubscribed to your event: "+event.name
+        mail.send(msg)
         event.removeUser(current_user)
         return redirect(url_for("eventsG"))
 
 
 @ app.route('/events', methods=['GET'])
 def eventsG():
-    # events = Event.query.filter_by(
-    #     private=False).order_by(Event.time).all()
-    events = Event.query.filter(Event.time > datetime.now()).filter_by(
+    events = Event.query.filter_by(
         private=False).order_by(Event.time).all()
+    # events = Event.query.filter(Event.time > datetime.datetime.now()).filter_by(
+    #     private=False).order_by(Event.time).all()
     if current_user.is_authenticated():
         subbedEvents = UsersEvents.query.filter_by(
             user_id=current_user.id).all()
@@ -358,4 +480,5 @@ def error413(e):
 if __name__ == "__main__":
     # app.run(ssl_context="adhoc")
     # app.run(use_reloader=True, debug=True, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0')
     app.run(debug=True)
