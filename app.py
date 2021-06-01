@@ -200,34 +200,34 @@ def register():
         f_name = request.form['first_name']
         l_name = request.form['last_name']
         password = request.form['password']
-        password_repeat = request.form['password_repeat']
+        # password_repeat = request.form['password_repeat']
         email = request.form['email']
 
-        if password == password_repeat:
-            user = User.getByEmail(email)
-            if user is None:
-                myUser = User(
-                    name=f_name+' '+l_name, email=email, signedWithGoogle=False
-                )
-                myUser.generate_my_password_hash(password)
-                myUser.insert()
-                login_user(myUser, remember=True)
-                # Send confirmation email
-                token = generate_email_token(current_user.email)
-                msg = Message(
-                    'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
-                msg.html = render_template(
-                    '/emails/register_confirm.html', register=True, name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
-                mail.send(msg)
+        # if password == password_repeat:
+        user = User.getByEmail(email)
+        if user is None:
+            myUser = User(
+                name=f_name+' '+l_name, email=email, signedWithGoogle=False
+            )
+            myUser.generate_my_password_hash(password)
+            myUser.insert()
+            login_user(myUser, remember=True)
+            # Send confirmation email
+            token = generate_email_token(current_user.email)
+            msg = Message(
+                'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
+            msg.html = render_template(
+                '/emails/register_confirm.html', register=True, name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
+            mail.send(msg)
 
-                flash('Account created', 'success')
-                return redirect(url_for("index"))
-            else:
-                flash('Email is taken by another user. Please try again!', 'danger')
-                return redirect(request.url)
+            flash('Account created', 'success')
+            return redirect(url_for("index"))
         else:
-            flash('Passwords don\'t match!', 'danger')
+            flash('Email is taken by another user. Please try again!', 'danger')
             return redirect(request.url)
+        # else:
+        #     flash('Passwords don\'t match!', 'danger')
+        #     return redirect(request.url)
 
 
 @app.route('/confirm', defaults={'token': None})
