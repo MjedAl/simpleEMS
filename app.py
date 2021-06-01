@@ -72,7 +72,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 
-def generate_confirmation_token(email):
+def generate_email_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     return serializer.dumps(email, salt=app.config['SECURITY_PASSWORD_SALT'])
 
@@ -126,30 +126,40 @@ def password_reset():
             flash('Invalid email!', 'danger')
             return render_template('reset.html')
         else:
-            # user with same email exist? :
-            # generate reset token and send email
+            user = User.query.filter_by(
+                email=email, signedWithGoogle=False).one_or_none()
+            if user is not None:
+                token = generate_email_token(email)
+                msg = Message(
+                    'SimpleEMS - Password reset', sender='simpleEMS <from@example.com>', recipients=[email])
+                msg.html = render_template(
+                    '/emails/reset_password.html', link='http://127.0.0.1:5000/reset/'+token)
+                mail.send(msg)
             flash('Email will be sent if user with email is found', 'success')
             return render_template('reset.html')
 
 # Continue later
 
 
-@app.route("/reset/<Token>", methods=['GET', 'POST'])
-def password_reset():
+# TODO
+@app.route("/reset/<token>", methods=['POST', 'GET'])
+def password_reset_token(token):
     if request.method == 'GET':
-        if current_user.is_authenticated():
-            return redirect(url_for("index"))
-        return render_template('reset.html')
+        return render_template('new_password.html', token=token)
     else:
-        email = request.form["email"]
-        if email is None:
-            flash('Invalid email!', 'danger')
-            return render_template('reset.html')
-        else:
-            # user with same email exist? :
-            # generate reset token and send email
-            flash('Email will be sent if user with email is found', 'success')
-            return render_template('reset.html')
+        password = request.form['password']
+        formToken = request.form['token']
+        # password reset token should expire with in 15m
+        email = confirm_token(formToken, 900)
+        if password is not None and formToken is not None:
+            if email is not None and email is not False:
+                user = User.query.filter_by(email=email).first()
+                user.generate_my_password_hash(password)
+                user.update()
+                flash('Password changed, Please log in', 'success')
+                return redirect(url_for("login"))
+            pass
+        pass
 
 
 def get_google_provider_cfg():
@@ -203,7 +213,7 @@ def register():
                 myUser.insert()
                 login_user(myUser, remember=True)
                 # Send confirmation email
-                token = generate_confirmation_token(current_user.email)
+                token = generate_email_token(current_user.email)
                 msg = Message(
                     'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
                 msg.html = render_template(
@@ -228,7 +238,7 @@ def confirmEmail(token):
         return redirect(url_for("index"))
     if token is None:
         # send the confirmation email
-        token = generate_confirmation_token(current_user.email)
+        token = generate_email_token(current_user.email)
         msg = Message(
             'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
         msg.html = render_template(
@@ -247,9 +257,6 @@ def confirmEmail(token):
             current_user.update()
             flash('Your email has been confirmed', 'success')
             return redirect(url_for("index"))
-
-        # confirm the email
-    return render_template('expression')
 
 
 @app.route('/gAuth')
