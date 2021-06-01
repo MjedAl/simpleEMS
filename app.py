@@ -23,7 +23,7 @@ from flask_mail import Mail, Message
 from db import setup_db, User, Event, UsersEvents
 
 try:
-    from secret import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SECRET_KEY, FLASK_JWT_SECRET_KEY, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+    from secret import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SALT, FLASK_SECRET_KEY, FLASK_JWT_SECRET_KEY, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
 except ModuleNotFoundError:
     GOOGLE_CLIENT_ID = None
     GOOGLE_CLIENT_SECRET = None
@@ -33,6 +33,7 @@ except ModuleNotFoundError:
     MAIL_PORT = None
     MAIL_USERNAME = None
     MAIL_PASSWORD = None
+    FLASK_SALT = None
 
 
 # Configuration
@@ -58,7 +59,7 @@ app.config['MAIL_USERNAME'] = MAIL_USERNAME
 app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = False
-app.config['SECURITY_PASSWORD_SALT'] = 'my_precious_two'  # TODO replace
+app.config['SECURITY_PASSWORD_SALT'] = FLASK_SALT
 mail = Mail(app)
 
 # upload setup
@@ -66,7 +67,7 @@ UPLOAD_FOLDER = './static/uploads'
 ALLOWED_PICTURES_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4 MB max image size
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # TODO replace on production
 
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
@@ -86,7 +87,7 @@ def confirm_token(token, expiration=3600):
             max_age=expiration
         )
     except:
-        return False
+        return None
     return email
 
 
@@ -138,10 +139,7 @@ def password_reset():
             flash('Email will be sent if user with email is found', 'success')
             return render_template('reset.html')
 
-# Continue later
 
-
-# TODO
 @app.route("/reset/<token>", methods=['POST', 'GET'])
 def password_reset_token(token):
     if request.method == 'GET':
@@ -150,16 +148,18 @@ def password_reset_token(token):
         password = request.form['password']
         formToken = request.form['token']
         # password reset token should expire with in 15m
-        email = confirm_token(formToken, 900)
         if password is not None and formToken is not None:
-            if email is not None and email is not False:
-                user = User.query.filter_by(email=email).first()
-                user.generate_my_password_hash(password)
-                user.update()
-                flash('Password changed, Please log in', 'success')
-                return redirect(url_for("login"))
-            pass
-        pass
+            email = confirm_token(formToken, 900)
+            if email is None:
+                flash('The reset link is invalid or has expired.', 'danger')
+                return render_template('new_password.html')
+            user = User.query.filter_by(email=email).first()
+            user.generate_my_password_hash(password)
+            user.update()
+            flash('Password changed, Please log in', 'success')
+            return redirect(url_for("login"))
+        flash('Invalid operation!', 'danger')
+        return render_template('new_password.html')
 
 
 def get_google_provider_cfg():
@@ -247,9 +247,8 @@ def confirmEmail(token):
         flash('Confirmation email has been sent!', 'success')
         return redirect(url_for("index"))
     else:
-        try:
-            email = confirm_token(token)
-        except:
+        email = confirm_token(token)
+        if email is None:
             flash('The confirmation link is invalid or has expired.', 'danger')
             return redirect(url_for("index"))
         if current_user.email == email:
