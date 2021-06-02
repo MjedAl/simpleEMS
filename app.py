@@ -412,11 +412,12 @@ def eventSub(id):
             abort(404)
         if event.private and event.owner_id != current_user.id:
             abort(403)
-        msg = Message(
-            'simpleEMS - New subscriber', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
-        msg.body = "New user ("+current_user.email + \
-            ") has subsribred to your event: "+event.name
-        mail.send(msg)
+        # Should i msg the owner or not? idk, maybe if the owner wants. TODO ask event owner opinion, change template
+        # msg = Message(
+        #     'simpleEMS - New subscriber', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
+        # msg.body = "New user ("+current_user.email + \
+        #     ") has subsribred to your event: "+event.name
+        # mail.send(msg)
         event.addUser(current_user)
         return redirect(url_for("eventsG"))
 
@@ -432,11 +433,12 @@ def eventUnsub(id):
             abort(404)
         if event.private and event.owner_id != current_user.id:
             abort(403)
-        msg = Message(
-            'simpleEMS - New unsubscribed', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
-        msg.body = "User ("+current_user.email + \
-            ") has unsubscribed to your event: "+event.name
-        mail.send(msg)
+        # Should i msg the owner or not? idk, maybe if the owner wants. TODO ask event owner opinion, change template
+        # msg = Message(
+        #     'simpleEMS - New unsubscribed', sender='simpleEMS yourId@gmail.com', recipients=[event.owner.email])
+        # msg.body = "User ("+current_user.email + \
+        #     ") has unsubscribed to your event: "+event.name
+        # mail.send(msg)
         event.removeUser(current_user)
         return redirect(url_for("eventsG"))
 
