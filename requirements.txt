@@ -11,3 +11,4 @@ flask_mail
 python-dotenv
 werkzeug
 oauthlib
+psycopg2
