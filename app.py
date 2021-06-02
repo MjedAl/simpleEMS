@@ -124,7 +124,7 @@ def password_reset():
                 msg = Message(
                     'SimpleEMS - Password reset', sender='simpleEMS <from@example.com>', recipients=[email])
                 msg.html = render_template(
-                    '/emails/reset_password.html', link='http://127.0.0.1:5000/reset/'+token)
+                    '/emails/reset_password.html', link=request.host_url+'reset/'+token)
                 mail.send(msg)
             flash('Email will be sent if user with email is found', 'success')
             return render_template('reset.html')
@@ -207,7 +207,7 @@ def register():
             msg = Message(
                 'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
             msg.html = render_template(
-                '/emails/register_confirm.html', register=True, name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
+                '/emails/register_confirm.html', register=True, name=current_user.name, link=request.host_url+'confirm/'+token)
             mail.send(msg)
 
             flash('Account created', 'success')
@@ -232,7 +232,7 @@ def confirmEmail(token):
         msg = Message(
             'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
         msg.html = render_template(
-            '/emails/register_confirm.html', name=current_user.name, link='http://127.0.0.1:5000/confirm/'+token)
+            '/emails/register_confirm.html', name=current_user.name, link=request.host_url+'confirm/'+token)
         mail.send(msg)
         flash('Confirmation email has been sent!', 'success')
         return redirect(url_for("index"))
@@ -477,8 +477,8 @@ def error413(e):
     return render_template('index.html', currentUser=current_user)
 
 
-# if __name__ == "__main__":
-#     # app.run(ssl_context="adhoc")
-#     # app.run(use_reloader=True, debug=True, host='0.0.0.0')
-#     app.run(debug=False, host='0.0.0.0')
+if __name__ == "__main__":
+    #     # app.run(ssl_context="adhoc")
+    # app.run(use_reloader=True, debug=True, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0')
 #     # app.run(debug=True)

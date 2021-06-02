@@ -8,5 +8,5 @@ Werkzeug
 boto3
 itsdangerous
 flask_mail
-dotenv
+python-dotenv
 werkzeug
