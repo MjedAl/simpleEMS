@@ -122,7 +122,7 @@ def password_reset():
             if user is not None:
                 token = generate_email_token(email)
                 msg = Message(
-                    'SimpleEMS - Password reset', sender='simpleEMS <from@example.com>', recipients=[email])
+                    'SimpleEMS - Password reset', sender='simpleEMS <'+app.config['MAIL_USERNAME']+'>', recipients=[email])
                 msg.html = render_template(
                     '/emails/reset_password.html', link=request.host_url+'reset/'+token)
                 mail.send(msg)
@@ -205,7 +205,7 @@ def register():
             # Send confirmation email
             token = generate_email_token(current_user.email)
             msg = Message(
-                'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
+                'SimpleEMS - Registration', sender='simpleEMS <'+app.config['MAIL_USERNAME']+'>', recipients=[current_user.email])
             msg.html = render_template(
                 '/emails/register_confirm.html', register=True, name=current_user.name, link=request.host_url+'confirm/'+token)
             mail.send(msg)
@@ -230,7 +230,7 @@ def confirmEmail(token):
         # send the confirmation email
         token = generate_email_token(current_user.email)
         msg = Message(
-            'SimpleEMS - Registration', sender='simpleEMS <from@example.com>', recipients=[current_user.email])
+            'SimpleEMS - Registration', sender='simpleEMS <'+app.config['MAIL_USERNAME']+'>', recipients=[current_user.email])
         msg.html = render_template(
             '/emails/register_confirm.html', name=current_user.name, link=request.host_url+'confirm/'+token)
         mail.send(msg)
