@@ -70,6 +70,7 @@ class User(UserMixin, db.Model):
                    default=random_user_id)
     email = db.Column(db.String(255), nullable=False, unique=True)
     name = db.Column(db.String(100), nullable=False)
+    emailConfirmed = db.Column(db.Boolean(), default=False)
     picture = db.Column(db.String())
     password = db.Column(db.String())
     signedWithGoogle = db.Column(db.Boolean(), default=False)
@@ -135,7 +136,6 @@ class Event(db.Model):
     location = db.Column(db.String())
     name = db.Column(db.String(), nullable=False)
     description = db.Column(db.String())
-
     # fix me
     # craetor = db.Column(db.String(), nullable=False)
     owner_id = db.Column(db.String(), db.ForeignKey('user.id'))

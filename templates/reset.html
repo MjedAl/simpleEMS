@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>EMS</title>
-    <link rel="stylesheet" href="static/assets/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="static/assets/fonts/fontawesome-all.min.css">
+    <link rel="stylesheet" href="./static/assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./static/assets/fonts/fontawesome-all.min.css">
 
 </head>
 <div style="height: 100vh;background: linear-gradient(rgb(23,162,184) 0%, white 100%);">
@@ -18,7 +18,7 @@
         </div>
     </nav>
 
-    <body class="bg-gradient-primary">
+    <body>
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-md-9 col-lg-12 col-xl-10">
@@ -26,25 +26,13 @@
                         <div class="card-body p-0">
                             <div class="p-5">
                                 <div class="text-center">
-                                    <h4 class="text-dark mb-4">Welcome Back!</h4>
+                                    <h4 class="text-dark mb-4">Reset my password :(</h4>
                                 </div>
-                                <form class="user" method="post">
-                                    <div class="form-group"><input class="form-control form-control-user" type="email"
+                                <form method="post">
+                                    <div class="form-group"><input class="form-control" type="email"
                                             id="exampleInputEmail" aria-describedby="emailHelp"
                                             placeholder="Enter Email Address..." name="email" required=""></div>
-                                    <div class="form-group"><input class="form-control form-control-user"
-                                            type="password" id="exampleInputPassword" placeholder="Password"
-                                            name="password" required=""></div>
-                                    <div class="form-group">
-                                        <div class="custom-control custom-checkbox small">
-                                            <div class="form-check"><input class="form-check-input custom-control-input"
-                                                    type="checkbox" id="formCheck-1"><label
-                                                    class="form-check-label custom-control-label"
-                                                    for="formCheck-1">Remember Me</label></div>
-                                        </div>
-                                    </div><button class="btn btn-primary btn-block text-white btn-user"
-                                        type="submit">Login</button>
-                                    <!-- Messages -->
+                                    <button class="btn btn-primary btn-block text-white" type="submit">Reset</button>
                                     {% with messages = get_flashed_messages(with_categories=true) %}
                                     {% if messages %}
                                     {% for category, message in messages %}
@@ -61,16 +49,14 @@
                                             $(".alert").fadeTo(500, 0).slideUp(500, function () {
                                                 $(this).remove();
                                             });
-                                        }, 3000);
+                                        }, 10000);
                                     </script>
                                     {% endif %}
                                     {% endwith %}
                                     <hr>
                                 </form>
-                                <a class="btn btn-danger btn-block text-white btn-google btn-user" role="button"
-                                    href="/gAuth"><i class="fab fa-google"></i>  Login with Google</a>
-                                <hr />
-                                <div class="text-center"><a class="small" href="reset">Forgot Password?</a></div>
+                                <!-- <div class="text-center"><a class="small" href="forgot-password.html">Forgot Password?</a></div> -->
+                                <div class="text-center"><a class="small" href="login">Login!</a></div>
                                 <div class="text-center"><a class="small" href="register">Create an Account!</a></div>
                             </div>
                         </div>
@@ -79,8 +65,8 @@
             </div>
         </div>
 </div>
-<script src="static/assets/js/jquery.min.js"></script>
-<script src="static/assets/bootstrap/js/bootstrap.min.js"></script>
+<script src="./static/assets/js/jquery.min.js"></script>
+<script src="./static/assets/bootstrap/js/bootstrap.min.js"></script>
 </body>
 
 </html>
