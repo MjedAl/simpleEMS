@@ -108,7 +108,7 @@ def index():
 @app.route("/reset", methods=['GET', 'POST'])
 def password_reset():
     if request.method == 'GET':
-        if current_user.is_authenticated():
+        if current_user.is_authenticated:
             return redirect(url_for("index"))
         return render_template('reset.html')
     else:
@@ -159,7 +159,7 @@ def get_google_provider_cfg():
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        if current_user.is_authenticated():
+        if current_user.is_authenticated:
             flash('Logged in', 'success')
             return redirect(url_for("index"))
         else:
@@ -181,7 +181,7 @@ def login():
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
-        if current_user.is_authenticated():
+        if current_user.is_authenticated:
             flash('Logged in', 'success')
             return redirect(url_for("index"))
         else:
@@ -378,13 +378,13 @@ def eventG(id):
             abort(404)
 
         if event.private:
-            if current_user.is_authenticated():
+            if current_user.is_authenticated:
                 if event.owner_id != current_user.id:
                     abort(403)
             else:
                 abort(403)
         users_events = None
-        if current_user.is_authenticated():
+        if current_user.is_authenticated:
             if event.owner_id == current_user.id:
                 users_events = UsersEvents.query.filter_by(
                     event_id=event.id).all()
@@ -393,7 +393,7 @@ def eventG(id):
 
 @ app.route('/event/<id>/subscribe', methods=['GET'])
 def eventSub(id):
-    if not current_user.is_authenticated():
+    if not current_user.is_authenticated:
         flash('Please log in first', 'danger')
         return redirect(url_for("eventsG"))
     if id is None:
@@ -441,7 +441,7 @@ def eventsG():
         private=False).order_by(Event.time).all()
     # events = Event.query.filter(Event.time > datetime.datetime.now()).filter_by(
     #     private=False).order_by(Event.time).all()
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         subbedEvents = UsersEvents.query.filter_by(
             user_id=current_user.id).all()
         userSubbedEventsIDs = [str(e.event_id) for e in subbedEvents]

@@ -108,7 +108,7 @@
             }, 1500);
         </script>
         {% endif %} {% endwith %}
-        {% if currentUser.is_authenticated() %}
+        {% if currentUser.is_authenticated %}
         {% if currentUser.events %}
         <div class="card bg-dark border-white bigCard">
             <div class="card-body">
@@ -188,7 +188,7 @@
             </div>
         </div>
         {% endif %}
-        {% if currentUser.is_authenticated() %}
+        {% if currentUser.is_authenticated %}
         {% if currentUser.createdEvents %}
         <div class="card bg-dark border-white bigCard">
             <div class="card-body">
