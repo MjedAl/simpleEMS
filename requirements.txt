@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+flask_migrate
+gunicorn
+requests
+Flask-Login
+Werkzeug
+boto3
+itsdangerous
+flask_mail
+dotenv
+werkzeug
