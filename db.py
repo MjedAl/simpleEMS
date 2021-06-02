@@ -13,7 +13,8 @@ if not os.environ.get("PRODUCTION"):
     from dotenv import load_dotenv, find_dotenv
     load_dotenv(find_dotenv())
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL").replace(
+    'postgres://', 'postgresql://')
 db = SQLAlchemy()
 
 
