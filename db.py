@@ -9,13 +9,11 @@ from datetime import datetime
 import random
 import string
 
-try:
-    from secret import DATABASE_URL
-except ModuleNotFoundError:
-    DATABASE_URL = None
+if not os.environ.get("PRODUCTION"):
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv())
 
-DATABASE_URL = os.getenv("DATABASE_URL") or DATABASE_URL
-
+DATABASE_URL = os.environ.get("DATABASE_URL")
 db = SQLAlchemy()
 
 
@@ -136,8 +134,6 @@ class Event(db.Model):
     location = db.Column(db.String())
     name = db.Column(db.String(), nullable=False)
     description = db.Column(db.String())
-    # fix me
-    # craetor = db.Column(db.String(), nullable=False)
     owner_id = db.Column(db.String(), db.ForeignKey('user.id'))
     owner = db.relationship('User', back_populates="createdEvents")
 

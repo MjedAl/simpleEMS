@@ -4,7 +4,9 @@ import os
 import functools
 from datetime import datetime
 # Third-party libraries
+import boto3
 from flask import Flask, redirect, request, url_for, flash, render_template, abort
+from flask.templating import Environment
 from flask_login import (
     LoginManager,
     current_user,
@@ -13,6 +15,7 @@ from flask_login import (
     logout_user,
 )
 from flask_migrate import current
+from jinja2 import environment
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from itsdangerous import URLSafeTimedSerializer
@@ -22,44 +25,29 @@ from flask_mail import Mail, Message
 # Internal imports
 from db import setup_db, User, Event, UsersEvents
 
-try:
-    from secret import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SALT, FLASK_SECRET_KEY, FLASK_JWT_SECRET_KEY, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
-except ModuleNotFoundError:
-    GOOGLE_CLIENT_ID = None
-    GOOGLE_CLIENT_SECRET = None
-    FLASK_SECRET_KEY = None
-    FLASK_JWT_SECRET_KEY = None
-    MAIL_SERVER = None
-    MAIL_PORT = None
-    MAIL_USERNAME = None
-    MAIL_PASSWORD = None
-    FLASK_SALT = None
+if not os.environ.get("PRODUCTION"):
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv())
 
 
-# Configuration
-GOOGLE_CLIENT_ID = os.environ.get(
-    "GOOGLE_CLIENT_ID", GOOGLE_CLIENT_ID)
-GOOGLE_CLIENT_SECRET = os.environ.get(
-    "GOOGLE_CLIENT_SECRET", GOOGLE_CLIENT_SECRET)
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 GOOGLE_DISCOVERY_URL = (
-    "https://accounts.google.com/.well-known/openid-configuration"
-)
-
+    "https://accounts.google.com/.well-known/openid-configuration")
 # Flask app setup
 app = Flask(__name__)
-app.secret_key = (os.environ.get("SECRET_KEY")
-                  or FLASK_SECRET_KEY) or os.urandom(24)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(24)
 login_manager = LoginManager()
 login_manager.init_app(app)
 setup_db(app)
 # Email setup
-app.config['MAIL_SERVER'] = MAIL_SERVER
-app.config['MAIL_PORT'] = MAIL_PORT
-app.config['MAIL_USERNAME'] = MAIL_USERNAME
-app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
+app.config['MAIL_PORT'] = int(os.environ.get("MAIL_PORT"))
+app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = False
-app.config['SECURITY_PASSWORD_SALT'] = FLASK_SALT
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("FLASK_SALT")
 mail = Mail(app)
 
 # upload setup
@@ -68,9 +56,11 @@ ALLOWED_PICTURES_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4 MB max image size
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # TODO replace on production
-
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+s3_client = boto3.client('s3', aws_access_key_id=os.environ.get("aws_access_key"),
+                         aws_secret_access_key=os.environ.get("aws_secret_key"))
 
 
 def generate_email_token(email):
@@ -363,11 +353,13 @@ def eventsP():
             picture = request.files['picture']
             if picture.filename != '':
                 if picture and allowed_picture(picture.filename):
-                    filename = secure_filename(picture.filename)
-                    pictureLocation = event.id + os.path.splitext(filename)[1]
-                    picture.save(os.path.join(
-                        app.config['UPLOAD_FOLDER'], pictureLocation))
-                    event.updatePicture(pictureLocation)
+                    imageName = event.id+'.png'
+                    s3_client.put_object(Body=picture,
+                                         Bucket='flask-images',
+                                         Key='simpleEMS/'+imageName,
+                                         ContentType=request.mimetype)
+                    imageURL = 'https://flask-images.s3.eu-central-1.amazonaws.com/simpleEMS/' + imageName
+                    event.updatePicture(imageURL)
 
         flash('Event Created', 'success')
         return redirect(url_for("eventG", id=event.id))
@@ -485,8 +477,8 @@ def error413(e):
     return render_template('index.html', currentUser=current_user)
 
 
-if __name__ == "__main__":
-    # app.run(ssl_context="adhoc")
-    # app.run(use_reloader=True, debug=True, host='0.0.0.0')
-    app.run(debug=False, host='0.0.0.0')
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     # app.run(ssl_context="adhoc")
+#     # app.run(use_reloader=True, debug=True, host='0.0.0.0')
+#     app.run(debug=False, host='0.0.0.0')
+#     # app.run(debug=True)

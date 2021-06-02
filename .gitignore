@@ -4,3 +4,4 @@ migrations
 __pycache__
 /templates/profile.html
 pg.py
+.env
