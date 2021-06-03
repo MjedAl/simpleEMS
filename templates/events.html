@@ -332,6 +332,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% if userSubbedEventsIDs %}
                                 {% if event.id in userSubbedEventsIDs %}
                                 <a class="eventButton" href="/event/{{event.id}}/unsubscribe">
                                     <button class="btn btn-secondary w-100" type="button">
@@ -343,6 +344,13 @@
                                         Subscribe
                                     </button></a>
                                 {% endif %}
+                                {% else %}
+                                <a class="eventButton" href="/event/{{event.id}}/subscribe">
+                                    <button class="btn btn-success w-100" type="button">
+                                        Subscribe
+                                    </button></a>
+                                {% endif %}
+
                             </div>
                         </div>
                         {% endfor %}
