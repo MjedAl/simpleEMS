@@ -18,7 +18,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL").replace(
 db = SQLAlchemy()
 
 
-def setup_db(app):
+def setup_db(app, admin, myAdminView, UsersView):
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.app = app
@@ -26,6 +26,9 @@ def setup_db(app):
     Migrate(app, db)
     db.create_all()
     app.db = db
+    admin.add_view(UsersView(User, db.session))
+    admin.add_view(myAdminView(Event, db.session))
+    admin.add_view(myAdminView(UsersEvents, db.session))
 
 
 def random_user_id():

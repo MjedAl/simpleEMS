@@ -1,4 +1,6 @@
 # Python standard libraries
+from flask_admin import Admin, AdminIndexView
+from flask_admin.contrib.sqla import ModelView
 import json
 import os
 import functools
@@ -24,6 +26,58 @@ import requests
 from flask_mail import Mail, Message
 # Internal imports
 from db import setup_db, User, Event, UsersEvents
+from jinja2 import Markup
+
+
+class UsersView(ModelView):
+    def getThumbnail(view, context, model, name):
+        if not model.picture:
+            return ''
+        return Markup('<img style="max-width: 64px" src="'+model.picture+'">')
+    # Image display of formatted list
+    column_formatters = {
+        'picture': getThumbnail
+    }
+    column_list = ['picture', 'name', 'email',
+                   'emailConfirmed', 'signedWithGoogle', 'roles']
+
+    def is_accessible(self):
+        if current_user.is_authenticated:
+            print(current_user.roles)
+            if 'admin' in current_user.roles:
+                return True
+        return False
+
+    def inaccessible_callback(self, name, **kwargs):
+        flash('Whew. you are not an admin :)', 'danger')
+        return redirect(url_for('index'))
+
+
+class myAdminView(ModelView):
+    def is_accessible(self):
+        if current_user.is_authenticated:
+            print(current_user.roles)
+            if 'admin' in current_user.roles:
+                return True
+        return False
+
+    def inaccessible_callback(self, name, **kwargs):
+        flash('Whew. you are not an admin :)', 'danger')
+        return redirect(url_for('index'))
+
+
+class AdminIndex(AdminIndexView):
+    def is_accessible(self):
+        if current_user.is_authenticated:
+            print(current_user.roles)
+            if 'admin' in current_user.roles:
+                return True
+        return False
+
+    def inaccessible_callback(self, name, **kwargs):
+        flash('Whew. you are not an admin :)', 'danger')
+        return redirect(url_for('index'))
+
 
 if not os.environ.get("PRODUCTION"):
     from dotenv import load_dotenv, find_dotenv
@@ -39,7 +93,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(24)
 login_manager = LoginManager()
 login_manager.init_app(app)
-setup_db(app)
+
+admin = Admin(app, name='simpleEMS',
+              template_mode='bootstrap4', index_view=AdminIndex())
+setup_db(app, admin, myAdminView, UsersView)
 # Email setup
 app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
 app.config['MAIL_PORT'] = int(os.environ.get("MAIL_PORT"))
@@ -55,7 +112,6 @@ UPLOAD_FOLDER = './static/uploads'
 ALLOWED_PICTURES_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4 MB max image size
-# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # TODO replace on production
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
@@ -223,9 +279,10 @@ def register():
 @app.route('/confirm', defaults={'token': None})
 @app.route('/confirm/<token>')
 def confirmEmail(token):
-    if current_user.emailConfirmed:
-        flash('Your email is already confirmed', 'success')
-        return redirect(url_for("index"))
+    if current_user.is_authenticated:
+        if current_user.emailConfirmed:
+            flash('Your email is already confirmed', 'success')
+            return redirect(url_for("index"))
     if token is None:
         # send the confirmation email
         token = generate_email_token(current_user.email)
@@ -241,11 +298,11 @@ def confirmEmail(token):
         if email is None:
             flash('The confirmation link is invalid or has expired.', 'danger')
             return redirect(url_for("index"))
-        if current_user.email == email:
-            current_user.emailConfirmed = True
-            current_user.update()
-            flash('Your email has been confirmed', 'success')
-            return redirect(url_for("index"))
+        user = User.query.filter_by(email=email).first()
+        user.emailConfirmed = True
+        user.update()
+        flash('Your email has been confirmed', 'success')
+        return redirect(url_for("index"))
 
 
 @app.route('/gAuth')
@@ -449,11 +506,11 @@ def eventsG():
     return render_template('events.html', events=events, currentUser=current_user)
 
 
-@ app.route("/admin")
-@ login_required
-@ roles_required('admin')
-def admin():
-    return render_template('admin.html')
+# @ app.route("/admin")
+# @ login_required
+# @ roles_required('admin')
+# def admin():
+#     return render_template('admin.html')
 
 
 @ app.errorhandler(404)
@@ -480,5 +537,5 @@ def error413(e):
 # if __name__ == "__main__":
     #     # app.run(ssl_context="adhoc")
     # app.run(use_reloader=True, debug=True, host='0.0.0.0')
-    # app.run(debug=False, host='0.0.0.0')
+    # app.run(debug=True, host='0.0.0.0')
 #     # app.run(debug=True)
