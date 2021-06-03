@@ -302,8 +302,14 @@ def callback():
         users_email = userinfo_response.json()["email"]
         picture = userinfo_response.json()["picture"]
         users_name = userinfo_response.json()["name"]
+
         getUser = User.get(unique_id)
         if getUser is None:
+            # first time logging in, check if user with same email exists exit else make user
+            user = User.getByEmail(users_email)
+            if user is not None:
+                flash('Email is taken by another user. Please try again!', 'danger')
+                return redirect(url_for("index"))
             getUser = User(
                 id=unique_id, name=users_name, email=users_email, picture=picture, signedWithGoogle=True, emailConfirmed=True
             )
