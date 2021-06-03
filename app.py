@@ -223,9 +223,10 @@ def register():
 @app.route('/confirm', defaults={'token': None})
 @app.route('/confirm/<token>')
 def confirmEmail(token):
-    if current_user.emailConfirmed:
-        flash('Your email is already confirmed', 'success')
-        return redirect(url_for("index"))
+    if current_user.is_authenticated:
+        if current_user.emailConfirmed:
+            flash('Your email is already confirmed', 'success')
+            return redirect(url_for("index"))
     if token is None:
         # send the confirmation email
         token = generate_email_token(current_user.email)
@@ -241,11 +242,11 @@ def confirmEmail(token):
         if email is None:
             flash('The confirmation link is invalid or has expired.', 'danger')
             return redirect(url_for("index"))
-        if current_user.email == email:
-            current_user.emailConfirmed = True
-            current_user.update()
-            flash('Your email has been confirmed', 'success')
-            return redirect(url_for("index"))
+        user = User.query.filter_by(email=email).first()
+        user.emailConfirmed = True
+        user.update()
+        flash('Your email has been confirmed', 'success')
+        return redirect(url_for("index"))
 
 
 @app.route('/gAuth')
