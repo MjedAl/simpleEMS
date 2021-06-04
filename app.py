@@ -173,7 +173,7 @@ def password_reset():
             flash('Invalid email!', 'danger')
             return render_template('reset.html')
         else:
-            email = email.upper()
+            email = email.lower()
             user = User.query.filter_by(
                 email=email, signedWithGoogle=False).one_or_none()
             if user is not None:
@@ -252,9 +252,9 @@ def register():
         # if password == password_repeat:
         user = User.getByEmail(email)
         if user is None:
-            email = email.upper()
+            email = email.lower()
             myUser = User(
-                name=f_name+' '+l_name, email=email, signedWithGoogle=False
+                name=f_name+' '+l_name, email=email
             )
             myUser.generate_my_password_hash(password)
             myUser.insert()
@@ -368,7 +368,7 @@ def callback():
                 flash('Email is taken by another user. Please try again!', 'danger')
                 return redirect(url_for("index"))
             getUser = User(
-                id=unique_id, name=users_name, email=users_email, picture=picture, signedWithGoogle=True, emailConfirmed=True
+                id=unique_id, name=users_name, email=users_email.lower(), picture=picture, signedWithGoogle=True, emailConfirmed=True
             )
             getUser.insert()
         login_user(getUser, remember=True)

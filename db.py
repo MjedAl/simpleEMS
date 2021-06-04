@@ -116,7 +116,8 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def getByEmail(email):
-        return User.query.filter_by(email=email.upper()).first()
+        email = email.lower()
+        return User.query.filter_by(email=email).first()
 
     @staticmethod
     def getByEmailAndPassword(email, password):
