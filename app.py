@@ -252,6 +252,7 @@ def register():
         # if password == password_repeat:
         user = User.getByEmail(email)
         if user is None:
+            email = email.upper()
             myUser = User(
                 name=f_name+' '+l_name, email=email, signedWithGoogle=False
             )
