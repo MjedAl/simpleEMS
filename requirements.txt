@@ -12,3 +12,4 @@ python-dotenv
 werkzeug
 oauthlib
 psycopg2
+Flask-Admin
