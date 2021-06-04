@@ -173,6 +173,7 @@ def password_reset():
             flash('Invalid email!', 'danger')
             return render_template('reset.html')
         else:
+            email = email.upper()
             user = User.query.filter_by(
                 email=email, signedWithGoogle=False).one_or_none()
             if user is not None:
@@ -199,7 +200,7 @@ def password_reset_token(token):
             if email is None:
                 flash('The reset link is invalid or has expired.', 'danger')
                 return render_template('new_password.html')
-            user = User.query.filter_by(email=email).first()
+            user = User.getByEmail(email)
             user.generate_my_password_hash(password)
             user.update()
             flash('Password changed, Please log in', 'success')
@@ -248,7 +249,6 @@ def register():
         password = request.form['password']
         # password_repeat = request.form['password_repeat']
         email = request.form['email']
-
         # if password == password_repeat:
         user = User.getByEmail(email)
         if user is None:
@@ -298,7 +298,7 @@ def confirmEmail(token):
         if email is None:
             flash('The confirmation link is invalid or has expired.', 'danger')
             return redirect(url_for("index"))
-        user = User.query.filter_by(email=email).first()
+        user = User.getByEmail(email)
         user.emailConfirmed = True
         user.update()
         flash('Your email has been confirmed', 'success')
