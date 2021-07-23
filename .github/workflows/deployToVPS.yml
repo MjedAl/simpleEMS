@@ -7,9 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: 
+      name: Production
+      url: https://SimpleEMS.A-FA.codes
     steps:
     - uses: actions/checkout@v1
-
     - name: Deploying to VPS
       uses: appleboy/ssh-action@master
       with:
