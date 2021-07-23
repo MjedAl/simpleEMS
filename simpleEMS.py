@@ -137,6 +137,15 @@ def confirm_token(token, expiration=3600):
     return email
 
 
+@app.before_request
+def before_request():
+    if os.environ.get("PRODUCTION"):
+        if not request.is_secure:
+            url = request.url.replace('http://', 'https://', 1)
+            code = 301
+            return redirect(url, code=code)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
@@ -474,7 +483,7 @@ def eventSub(id):
         # msg.body = "New user ("+current_user.email + \
         #     ") has subsribred to your event: "+event.name
         # mail.send(msg)
-        event.addUser(current_user)
+        event.addUser(current_user, 'subscribed')
         return redirect(url_for("eventsG"))
 
 
@@ -501,10 +510,10 @@ def eventUnsub(id):
 
 @ app.route('/events', methods=['GET'])
 def eventsG():
-    events = Event.query.filter_by(
-        private=False).order_by(Event.time).all()
-    # events = Event.query.filter(Event.time > datetime.datetime.now()).filter_by(
+    # events = Event.query.filter_by(
     #     private=False).order_by(Event.time).all()
+    events = Event.query.filter(Event.time > datetime.datetime.now()).filter_by(
+        private=False).order_by(Event.time).all()
     if current_user.is_authenticated:
         subbedEvents = UsersEvents.query.filter_by(
             user_id=current_user.id).all()
@@ -541,8 +550,8 @@ def error413(e):
     return render_template('index.html', currentUser=current_user)
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     #     # app.run(ssl_context="adhoc")
     # app.run(use_reloader=True, debug=True, host='0.0.0.0')
-    # app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0')
 #     # app.run(debug=True)

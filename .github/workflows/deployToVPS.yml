@@ -1,0 +1,29 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Deploying to VPS
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        USERNAME: ${{ secrets.USERNAME }}
+        PORT: ${{ secrets.PORT }}
+        KEY: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          su root
+          ${{ secrets.rootPassword }}
+          cd /home/root/dev/simpleEMS/simpleEMS/
+          git pull origin main
+          python3 -m venv env
+          source env/bin/activate
+          pip install -r requirements.txt
+          deactivate
+          sudo systemctl restart simpleEMS
