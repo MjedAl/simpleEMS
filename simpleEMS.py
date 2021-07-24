@@ -137,15 +137,6 @@ def confirm_token(token, expiration=3600):
     return email
 
 
-@app.before_request
-def before_request():
-    if os.environ.get("PRODUCTION"):
-        if not request.is_secure:
-            url = request.url.replace('http://', 'https://', 1)
-            code = 301
-            return redirect(url, code=code)
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
@@ -483,7 +474,7 @@ def eventSub(id):
         # msg.body = "New user ("+current_user.email + \
         #     ") has subsribred to your event: "+event.name
         # mail.send(msg)
-        event.addUser(current_user, 'subscribed')
+        event.addUser(current_user)
         return redirect(url_for("eventsG"))
 
 
