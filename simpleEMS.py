@@ -512,7 +512,7 @@ def eventUnsub(id):
 def eventsG():
     # events = Event.query.filter_by(
     #     private=False).order_by(Event.time).all()
-    events = Event.query.filter(Event.time > datetime.datetime.now()).filter_by(
+    events = Event.query.filter(Event.time > datetime.now()).filter_by(
         private=False).order_by(Event.time).all()
     if current_user.is_authenticated:
         subbedEvents = UsersEvents.query.filter_by(
