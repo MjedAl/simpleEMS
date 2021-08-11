@@ -227,6 +227,15 @@ def refresh():
     }), 200
 
 
+@app_api_v1.route("/api/v1/whoAmI", methods=["GET"])
+@jwt_required()
+def whoAmI():
+    return jsonify({
+        'success': True,
+        'user': current_user.short(),
+    }), 200
+
+
 def error_400():
     return jsonify({
         "success": False,
