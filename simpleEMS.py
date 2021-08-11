@@ -1,10 +1,11 @@
 # Python standard libraries
+from dotenv import load_dotenv, find_dotenv
 from flask_admin import Admin, AdminIndexView
 from flask_admin.contrib.sqla import ModelView
 import json
 import os
 import functools
-from datetime import datetime
+from datetime import datetime, timedelta
 # Third-party libraries
 import boto3
 from flask import Flask, redirect, request, url_for, flash, render_template, abort
@@ -27,6 +28,8 @@ from flask_mail import Mail, Message
 # Internal imports
 from db import setup_db, User, Event, UsersEvents
 from jinja2 import Markup
+from flask_jwt_extended.jwt_manager import JWTManager
+from api import app_api_v1, init_blueprint
 
 
 class UsersView(ModelView):
@@ -79,9 +82,7 @@ class AdminIndex(AdminIndexView):
         return redirect(url_for('index'))
 
 
-if not os.environ.get("PRODUCTION"):
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv())
+load_dotenv(find_dotenv())
 
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
@@ -106,6 +107,26 @@ app.config['MAIL_USE_TLS'] = True
 # app.config['MAIL_USE_SSL'] = False
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("FLASK_SALT")
 mail = Mail(app)
+# JWT config
+jwt = JWTManager(app)
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY") or os.urandom(24)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
+
+init_blueprint(app)
+app.register_blueprint(app_api_v1)
+
+
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return user.id
+
+
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    return User.query.filter_by(id=identity).one_or_none()
+
 
 # upload setup
 UPLOAD_FOLDER = './static/uploads'
@@ -378,10 +399,6 @@ def callback():
         return "User email not available or not verified by Google.", 400
 
 # TODO
-# @app.route('/profile')
-# @login_required
-# def profile():
-#     return render_template('profile.html', currentUser=current_user)
 
 
 @app.route("/logout")
@@ -409,7 +426,9 @@ def eventsP():
         if 'private' in request.form:
             private = True
 
+        # todo accept as utc
         date_time_obj = datetime.strptime(date, '%m/%d/%Y %H:%M %p')
+
         event = Event(owner_id=current_user.id, name=name, description=description,
                       location=location, time=date_time_obj, private=private)
         event.insert()
