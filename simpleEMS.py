@@ -29,7 +29,7 @@ from flask_mail import Mail, Message
 from db import setup_db, User, Event, UsersEvents
 from jinja2 import Markup
 from flask_jwt_extended.jwt_manager import JWTManager
-from api import app_api_v1, init_blueprint
+from api import app_api_v1
 
 
 class UsersView(ModelView):
@@ -113,7 +113,19 @@ app.config["JWT_SECRET_KEY"] = os.environ.get(
     "JWT_SECRET_KEY") or os.urandom(24)
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
 
-init_blueprint(app)
+# upload setup
+UPLOAD_FOLDER = './static/uploads'
+ALLOWED_PICTURES_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4 MB max image size
+# OAuth 2 client setup
+client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+s3_client = boto3.client('s3', aws_access_key_id=os.environ.get("aws_access_key"),
+                         aws_secret_access_key=os.environ.get("aws_secret_key"))
+
+
+# init_blueprint(app, s3_client)
 app.register_blueprint(app_api_v1)
 
 
@@ -126,18 +138,6 @@ def user_identity_lookup(user):
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
     return User.query.filter_by(id=identity).one_or_none()
-
-
-# upload setup
-UPLOAD_FOLDER = './static/uploads'
-ALLOWED_PICTURES_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4 MB max image size
-# OAuth 2 client setup
-client = WebApplicationClient(GOOGLE_CLIENT_ID)
-
-s3_client = boto3.client('s3', aws_access_key_id=os.environ.get("aws_access_key"),
-                         aws_secret_access_key=os.environ.get("aws_secret_key"))
 
 
 def generate_email_token(email):
@@ -558,10 +558,3 @@ def error403(e):
 def error413(e):
     flash('Picture size is big!', 'danger')
     return render_template('index.html', currentUser=current_user)
-
-
-if __name__ == "__main__":
-    #     # app.run(ssl_context="adhoc")
-    # app.run(use_reloader=True, debug=True, host='0.0.0.0')
-    app.run(debug=True, host='0.0.0.0')
-#     # app.run(debug=True)
