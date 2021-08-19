@@ -9,9 +9,8 @@ from datetime import datetime
 import random
 import string
 
-if not os.environ.get("PRODUCTION"):
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv())
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
 
 DATABASE_URL = os.environ.get("DATABASE_URL").replace(
     'postgres://', 'postgresql://')
@@ -61,6 +60,24 @@ class UsersEvents(db.Model):
     user = db.relationship("User", back_populates="events")
     event = db.relationship("Event", back_populates="users")
 
+    #
+    def short(self):
+        return {
+            "user_id": self.user_id,
+            "event_id": self.event_id,
+            "user": self.user.short(),
+            "event": self.event.short()
+        }
+
+    def eventInfo(self):
+        return self.event.shortUser(self.user)
+
+    def userInfo(self):
+        return {
+            "user": self.user.short(),
+            "addedOn": self.addedOn
+        }
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -84,9 +101,10 @@ class User(UserMixin, db.Model):
 
     def short(self):
         return {
+            "name": self.name,
             "id": self.id,
             "email": self.email,
-            "name": self.name,
+            "emailConfirmed": self.emailConfirmed,
             "picture": self.picture
         }
 
@@ -179,13 +197,38 @@ class Event(db.Model):
             "location": self.location,
             "name": self.name,
             "description": self.description,
-            "time-full": self.time.strftime("%m/%d/%Y %H:%M %p"),
+            "time-full": self.time.strftime("%Y-%m-%d %H:%M:%S.%fZ"),
             "time-day": self.time.strftime("%d"),
             "time-month": self.time.strftime("%b"),
             "time-time": self.time.strftime("%H:%M %p"),
             "currentRegistered": self.currentRegistered,
+            "ownerName": self.owner.name,
+            "image": self.getPicture(),
             "private": self.private
         }
+
+    def shortUser(self, user):
+        return {
+            "id": self.id,
+            "location": self.location,
+            "name": self.name,
+            "description": self.description,
+            "time-full": self.time.strftime("%Y-%m-%d %H:%M:%S.%fZ"),
+            "currentRegistered": self.currentRegistered,
+            "ownerName": self.owner.name,
+            "private": self.private,
+            "image": self.getPicture(),
+            "registered": getattr(UsersEvents.query.filter_by(
+                user_id=user.id, event_id=self.id).first(), 'addedOn', 'False')
+        }
+
+    def getPicture(self):
+        if self.picture is None or self.picture == '':
+            return None
+        # TODO check if image is stored locally or in AWS S3
+        # if (self.picture.startswith('http')):
+        return self.picture
+        # return 'http://192.168.1.102:5000/static/uploads/'+self.picture
 
     def timeDetails(self):
         return {

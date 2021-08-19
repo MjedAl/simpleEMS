@@ -1,3 +1,4 @@
+import os
 from os import abort
 from flask import Blueprint, session, jsonify, request, render_template, current_app
 from flask_jwt_extended.internal_utils import user_lookup
@@ -8,14 +9,14 @@ from flask_jwt_extended import (
     create_access_token, get_jwt_identity, jwt_required, current_user)
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
+import boto3
+import base64
 
 app_api_v1 = Blueprint('app_api_v1', __name__)
 
 mail = Mail()
-
-
-def init_blueprint(app):
-    mail = Mail(app)
+s3_client = boto3.client('s3', aws_access_key_id=os.environ.get("aws_access_key"),
+                         aws_secret_access_key=os.environ.get("aws_secret_key"))
 
 
 def generate_email_token(email):
@@ -40,6 +41,81 @@ def getEvents():
             'success': True,
             'events': [event.short() for event in events]
         })
+    except Exception as e:
+        return error_500()
+
+
+@app_api_v1.route("/api/v1/events", methods=['POST'])
+@jwt_required()
+def postEvent():
+    try:
+        JSON_body = request.get_json()
+        if JSON_body is None:
+            return jsonify({
+                'success': False,
+                'message': 'invalid request missing body'
+            }), 400
+        name = JSON_body.get('name')
+        description = JSON_body.get('description')
+        location = JSON_body.get('location')
+        date = JSON_body.get('date')
+        if not name or not description or not date or not location:
+            return jsonify({
+                'success': False,
+                'message': 'invalid request missing params'
+            }), 400
+        else:
+            try:
+                date_time_obj = datetime.strptime(
+                    date, '%Y-%m-%d %H:%M:%S.%fZ')
+            except Exception:
+                return jsonify({
+                    'success': False,
+                    'message': 'Couldn\'t parse time'
+                }), 400
+            event = Event(owner_id=current_user.id, name=name, description=description,
+                          location=location, time=date_time_obj)
+            event.insert()
+            image = JSON_body.get('image')
+            if image:
+                imageName = event.id+'.png'
+                s3_client.put_object(Body=base64.b64decode(image),
+                                     Bucket='flask-images',
+                                     Key='simpleEMS/'+imageName,
+                                     ContentType=request.mimetype)
+                imageURL = 'https://flask-images.s3.eu-central-1.amazonaws.com/simpleEMS/' + imageName
+                event.updatePicture(imageURL)
+        return jsonify({
+            'success': True,
+            'event_id': event.id
+        })
+    except Exception as e:
+        return error_500()
+
+
+@app_api_v1.route("/api/v1/passwordReset", methods=['POST'])
+def forgotPassword():
+    try:
+        JSON_body = request.get_json()
+        if JSON_body is None:
+            return jsonify({
+                'success': False,
+                'message': 'invalid request'
+            }), 400
+        email = JSON_body.get("email")
+        if email is not None:
+            user = User.getByEmail(email)
+            if user is not None:
+                token = generate_email_token(email)
+                msg = Message(
+                    'SimpleEMS - Password reset', sender='simpleEMS <'+current_app.config['MAIL_USERNAME']+'>', recipients=[email])
+                msg.html = render_template(
+                    '/emails/reset_password.html', link=request.host_url+'reset/'+token)
+                mail.send(msg)
+        return jsonify({
+            'success': True,
+            'message': "Email will be sent if user with email is found"
+        }), 200
     except Exception as e:
         return error_500()
 
@@ -93,7 +169,6 @@ def getEvent(event_id):
             'subbedUsersInfo': subbedUsersInfo
         })
     except Exception as e:
-        print(e)
         return error_500()
 
 
@@ -142,7 +217,6 @@ def apiLogin():
     try:
         JSON_body = request.get_json()
         if JSON_body is None:
-            print('no json')
             return jsonify({
                 'success': False,
                 'message': 'invalid request'
@@ -160,7 +234,8 @@ def apiLogin():
                 return jsonify({
                     'success': True,
                     'token': create_access_token(identity=user, fresh=True),
-                    'refresh_token': create_refresh_token(identity=user)
+                    'refresh_token': create_refresh_token(identity=user),
+                    'userData': user.short(),
                 }), 200
         else:
             return jsonify({
@@ -176,7 +251,6 @@ def apiRegister():
     try:
         JSON_body = request.get_json()
         if JSON_body is None:
-            print('no json')
             return jsonify({
                 'success': False,
                 'message': 'invalid request'
@@ -201,7 +275,8 @@ def apiRegister():
                 return jsonify({
                     'success': True,
                     'token': create_access_token(identity=user, fresh=True),
-                    'refresh_token': create_refresh_token(identity=user)
+                    'refresh_token': create_refresh_token(identity=user),
+                    'userData': user.short(),
                 }), 200
             else:
                 return jsonify({
