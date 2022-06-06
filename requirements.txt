@@ -31,4 +31,4 @@ SQLAlchemy==1.4.22
 urllib3==1.26.6
 Werkzeug==2.0.1
 WTForms==2.3.3
-Flask-JWT-Extended==4.2.3
+Flask-JWT-Extended==4.4.1
